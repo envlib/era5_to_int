@@ -530,7 +530,7 @@ def main(
 
     int_vars = []
     if isobaric:
-        # int_vars.append(MetVar('GEOPT', 'Z', 'e5.oper.an.pl.128_129_z.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
+        int_vars.append(MetVar('GEOPT', 'Z', 'e5.oper.an.pl.128_129_z.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
         int_vars.append(MetVar('SPECHUMD', 'Q', 'e5.oper.an.pl.128_133_q.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
         int_vars.append(MetVar('TT', 'T', 'e5.oper.an.pl.128_130_t.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
         int_vars.append(MetVar('UU', 'U', 'e5.oper.an.pl.128_131_u.ll025uv.{}_{}.nc', begin_daily, end_daily, LatLon))
