@@ -1,6 +1,6 @@
 from enum import Enum
-# import fortran_io as f_io
 
+# import fortran_io as f_io
 from . import fortran_io as f_io
 
 class Projections( Enum ) :
@@ -12,7 +12,7 @@ class Projections( Enum ) :
   GAUSS        = 4      # Gaussian
   CYL          = 5
   CASSINI      = 6
-  ALBERS_NAD83 = 105 
+  ALBERS_NAD83 = 105
   ROTLL        = 203
 
 class IntermediateFile( object ):
@@ -25,7 +25,7 @@ class IntermediateFile( object ):
   def close( self ) :
     self.file_.close()
 
-  def write_next_met_field( 
+  def write_next_met_field(
                             self,
                             version,
                             nx, ny,
@@ -35,8 +35,8 @@ class IntermediateFile( object ):
                             startlat, startlon, starti, startj,
                             deltalat, deltalon, dx, dy,
                             xlonc, truelat1, truelat2,
-                            earth_radius, 
-                            is_wind_grid_rel, 
+                            earth_radius,
+                            is_wind_grid_rel,
                             field,
                             hdate,
                             units,
@@ -53,7 +53,7 @@ class IntermediateFile( object ):
 
     if field == "GHT" :
       field = "HGT"
-    
+
     if version == 5 :
       # FP check okay here?
       startloc = None
@@ -80,7 +80,7 @@ class IntermediateFile( object ):
                                 )
       if iproj == Projections.LATLON or iproj == Projections.GAUSS:
         f_io.unfmt_ftn_rec_write(
-                                  [ 
+                                  [
                                     startloc.ljust(8)[0:8],
                                     startlat,
                                     startlon,
@@ -92,7 +92,7 @@ class IntermediateFile( object ):
                                 )
       elif iproj == Projections.MERC :
         f_io.unfmt_ftn_rec_write(
-                                  [ 
+                                  [
                                     startloc.ljust(8)[0:8],
                                     startlat,
                                     startlon,
@@ -105,7 +105,7 @@ class IntermediateFile( object ):
                                 )
       elif iproj == Projections.LC :
         f_io.unfmt_ftn_rec_write(
-                                  [ 
+                                  [
                                     startloc.ljust(8)[0:8],
                                     startlat,
                                     startlon,
@@ -120,7 +120,7 @@ class IntermediateFile( object ):
                                 )
       elif iproj == Projections.PS :
         f_io.unfmt_ftn_rec_write(
-                                  [ 
+                                  [
                                     startloc.ljust(8)[0:8],
                                     startlat,
                                     startlon,

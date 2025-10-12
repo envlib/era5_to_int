@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from netCDF4 import Dataset
 import numpy as np
-import argparse
+# import argparse
 import sys
-import os.path
+# import os.path
 from pathlib import Path
 import typer
 from typing_extensions import Annotated
@@ -16,7 +16,7 @@ from . import WPSUtils
 ######################################################
 ### Parameters
 
-up1_dirs = ('e5.oper.an.ml', 'e5.oper.an.pl', 'e5.oper.an.sfc', 'e5.oper.invariant',)
+up1_dirs = ('e5.oper.an.pl', 'e5.oper.an.sfc', 'e5.oper.invariant',)
 
 ######################################################
 ### Functions
@@ -47,7 +47,7 @@ class SnowDiags:
             return
 
         if self.snow_den is not None and self.snow_ec is not None:
-            print('Computing SNOWH and SNOW')
+            # print('Computing SNOWH and SNOW')
             snow = self.snow_ec * 1000.0
             snowh = snow / self.snow_den
 
@@ -84,7 +84,7 @@ class RH2mDiags:
             return
 
         if self.t is not None and self.td is not None:
-            print('Computing RH at 200100.0')
+            # print('Computing RH at 200100.0')
 
             Xlv = 2.5e6
             Rv = 461.5
@@ -122,7 +122,7 @@ class RHDiags:
         C7= .379534310E-11
         C8=-.321582393E-13
 
-        t_bounded =np.maximum(-80.0, t - t0)
+        t_bounded = np.maximum(-80.0, t - t0)
         # Simplified calc of saturation vapor pressure
         # esL = 612.2 * np.exp(17.67 * t_bounded / (self.t-29.65))
         # esL with coefficients used instead
@@ -164,7 +164,7 @@ class RHDiags:
             return
 
         if ('tt', xlvl) in self.savefields and ('q', xlvl) in self.savefields:
-          print('Computing RH at ' + str(xlvl))
+          # print('Computing RH at ' + str(xlvl))
           mixRatioESL = self.liquidSaturationVaporMixRatio( self.savefields[('tt', xlvl)], xlvl)
           mixRatioWaterVapor = self.savefields[('q', xlvl)] / (1.0 - self.savefields[('q', xlvl)])
           rh = 100.0 * mixRatioWaterVapor / mixRatioESL
@@ -190,13 +190,13 @@ class GeopotentialHeightDiags:
         """
 
         if field == 'GEOPT':
-            print('Computing GHT at ', xlvl)
+            # print('Computing GHT at ', xlvl)
 
             write_slab(intfile, slab / 9.81, xlvl, proj, 'GHT', hdate, 'm',
                 'ERA5 reanalysis grid', 'Geopotential height')
 
         elif field == 'SOILGEO':
-            print('Computing SOILHGT')
+            # print('Computing SOILHGT')
 
             write_slab(intfile, slab / 9.81, 200100.0, proj, 'SOILHGT', hdate, 'm',
                 'ERA5 reanalysis grid', 'Geopotential height')
@@ -326,13 +326,12 @@ class MetVar:
     """
 
     def __init__(self, WPSname, ERA5name, ERA5file, beginDateFn, endDateFn,
-                 mapProj, isInvariant=False):
+                 isInvariant=False):
         self.WPSname = WPSname
         self.ERA5name = ERA5name
         self.ERA5file = ERA5file
         self.beginDateFn = beginDateFn
         self.endDateFn = endDateFn
-        self.mapProj = mapProj
         self.isInvariant = isInvariant
 
 
@@ -345,31 +344,6 @@ def find_era5_file(var, validtime, root_path):
     If no file can be found containing the specified variable at the specified
     time, a RuntimeError exception is raised.
     """
-
-    # glade_paths = [
-    #     # New Glade paths as of March 2025
-    #     '/glade/campaign/collections/rda/data/d633006/e5.oper.an.ml/',
-    #     '/glade/campaign/collections/rda/data/d633000/e5.oper.an.pl/',
-    #     '/glade/campaign/collections/rda/data/d633000/e5.oper.an.sfc/',
-    #     '/glade/campaign/collections/rda/data/d633000/e5.oper.invariant/197901/',
-    #     '/glade/campaign/collections/rda/data/d633006/e5.oper.invariant/',
-
-    #     # Old Glade paths prior to March 2025
-    #     '/glade/campaign/collections/rda/data/ds633.6/e5.oper.an.ml/',
-    #     '/glade/campaign/collections/rda/data/ds633.0/e5.oper.an.pl/',
-    #     '/glade/campaign/collections/rda/data/ds633.0/e5.oper.an.sfc/',
-    #     '/glade/campaign/collections/rda/data/ds633.0/e5.oper.invariant/197901/',
-    #     '/gpfs/csfs1/collections/rda/decsdata/ds630.0/P/e5.oper.invariant/201601/'
-    #     ]
-
-    # if localpaths != None:
-    #     file_paths = localpaths
-    # else:
-    #     file_paths = glade_paths
-
-    # file_paths = [path if path.endswith('/') else path + '/' for path in file_paths]
-
-
     yyyy, mm, dd, hh = string_to_yyyymmddhh(validtime)
 
     begin_date = var.beginDateFn(yyyy, mm, dd, hh)
@@ -485,8 +459,8 @@ def main(
         start_date: Annotated[datetime, typer.Argument(help='The starting date-time which records are converted', formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H", "%Y-%m-%d_%H"])],
         end_date: Annotated[datetime, typer.Argument(help='The ending date-time which records are converted', formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H", "%Y-%m-%d_%H"])],
         hour_interval: Annotated[int, typer.Option("--hour-interval", "-h", help='The interval in hours between records to be converted')] = 6,
-        variables: Annotated[str, typer.Option("--variables", "-v", help='A comma-separated list, without spaces, of WPS variable names to process')] = None,
-        isobaric: Annotated[bool, typer.Option("--isobaric", "-i", help='Use ERA5 pressure-level data rather than model-level data')] = False,
+        # variables: Annotated[str, typer.Option("--variables", "-v", help='A comma-separated list, without spaces, of WPS variable names to process')] = None,
+        # isobaric: Annotated[bool, typer.Option("--isobaric", "-i", help='Use ERA5 pressure-level data rather than model-level data')] = False,
          ):
 
     # parser = argparse.ArgumentParser()
@@ -513,54 +487,49 @@ def main(
     print('interval_hours = ', intvH)
 
     # Set up the two map projections used in the ERA5 fields to be converted
-    Gaussian = MapProjection(WPSUtils.Projections.GAUSS,
-         89.7848769072, 0.0, 1.0, 1.0, 640.0 / 2.0, 360.0 / 1280.0)
+    # Gaussian = MapProjection(WPSUtils.Projections.GAUSS,
+    #      89.7848769072, 0.0, 1.0, 1.0, 640.0 / 2.0, 360.0 / 1280.0)
     # LatLon = MapProjection(WPSUtils.Projections.LATLON,
     #      90.0, 0.0, 1.0, 1.0, -0.25, 0.25)
-    LatLon = MapProjection(WPSUtils.Projections.LATLON,
-         -20.0, 144.0, 1.0, 1.0, -0.25, 0.25)
+    # LatLon = MapProjection(WPSUtils.Projections.LATLON,
+    #      -20.0, 144.0, 1.0, 1.0, -0.25, 0.25)
+    # LatLon = MapProjection(WPSUtils.Projections.LATLON,
+    #      -15.0, 120.0, 1.0, 1.0, -0.25, 0.25)
 
     diagnostics = []
     diagnostics.append(SnowDiags())
     diagnostics.append(RH2mDiags())
     diagnostics.append(GeopotentialHeightDiags())
 
-    if isobaric:
-        diagnostics.append(RHDiags())
+    diagnostics.append(RHDiags())
 
     int_vars = []
-    if isobaric:
-        int_vars.append(MetVar('GEOPT', 'Z', 'e5.oper.an.pl.128_129_z.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
-        int_vars.append(MetVar('SPECHUMD', 'Q', 'e5.oper.an.pl.128_133_q.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
-        int_vars.append(MetVar('TT', 'T', 'e5.oper.an.pl.128_130_t.ll025sc.{}_{}.nc', begin_daily, end_daily, LatLon))
-        int_vars.append(MetVar('UU', 'U', 'e5.oper.an.pl.128_131_u.ll025uv.{}_{}.nc', begin_daily, end_daily, LatLon))
-        int_vars.append(MetVar('VV', 'V', 'e5.oper.an.pl.128_132_v.ll025uv.{}_{}.nc', begin_daily, end_daily, LatLon))
-    else:
-        int_vars.append(MetVar('SPECHUMD', 'Q', 'e5.oper.an.ml.0_5_0_1_0_q.regn320sc.{}_{}.nc', begin_6hourly, end_6hourly, Gaussian))
-        int_vars.append(MetVar('TT', 'T', 'e5.oper.an.ml.0_5_0_0_0_t.regn320sc.{}_{}.nc', begin_6hourly, end_6hourly, Gaussian))
-        int_vars.append(MetVar('UU', 'U', 'e5.oper.an.ml.0_5_0_2_2_u.regn320uv.{}_{}.nc', begin_6hourly, end_6hourly, Gaussian))
-        int_vars.append(MetVar('VV', 'V', 'e5.oper.an.ml.0_5_0_2_3_v.regn320uv.{}_{}.nc', begin_6hourly, end_6hourly, Gaussian))
-    int_vars.append(MetVar('LANDSEA', 'LSM', 'e5.oper.invariant.128_172_lsm.ll025sc.1979010100_1979010100.nc', begin_monthly, end_monthly, LatLon, isInvariant=True))
-    int_vars.append(MetVar('SST', 'SSTK', 'e5.oper.an.sfc.128_034_sstk.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SKINTEMP', 'SKT', 'e5.oper.an.sfc.128_235_skt.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SM000007', 'SWVL1', 'e5.oper.an.sfc.128_039_swvl1.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SM007028', 'SWVL2', 'e5.oper.an.sfc.128_040_swvl2.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SM028100', 'SWVL3', 'e5.oper.an.sfc.128_041_swvl3.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SM100289', 'SWVL4', 'e5.oper.an.sfc.128_042_swvl4.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('ST000007', 'STL1', 'e5.oper.an.sfc.128_139_stl1.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('ST007028', 'STL2', 'e5.oper.an.sfc.128_170_stl2.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('ST028100', 'STL3', 'e5.oper.an.sfc.128_183_stl3.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('ST100289', 'STL4', 'e5.oper.an.sfc.128_236_stl4.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SEAICE', 'CI', 'e5.oper.an.sfc.128_031_ci.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('TT', 'VAR_2T', 'e5.oper.an.sfc.128_167_2t.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('DEWPT', 'VAR_2D', 'e5.oper.an.sfc.128_168_2d.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('UU', 'VAR_10U', 'e5.oper.an.sfc.128_165_10u.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('VV', 'VAR_10V', 'e5.oper.an.sfc.128_166_10v.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SNOW_DEN', 'RSN', 'e5.oper.an.sfc.128_033_rsn.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SNOW_EC', 'SD', 'e5.oper.an.sfc.128_141_sd.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('PMSL', 'MSL', 'e5.oper.an.sfc.128_151_msl.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('PSFC', 'SP', 'e5.oper.an.sfc.128_134_sp.ll025sc.{}_{}.nc', begin_monthly, end_monthly, LatLon))
-    int_vars.append(MetVar('SOILGEO', 'Z', 'e5.oper.invariant.128_129_z.ll025sc.1979010100_1979010100.nc', begin_monthly, end_monthly, LatLon, isInvariant=True))
+    int_vars.append(MetVar('GEOPT', 'Z', 'e5.oper.an.pl.128_129_z.ll025sc.{}_{}.nc', begin_daily, end_daily))
+    int_vars.append(MetVar('SPECHUMD', 'Q', 'e5.oper.an.pl.128_133_q.ll025sc.{}_{}.nc', begin_daily, end_daily))
+    int_vars.append(MetVar('TT', 'T', 'e5.oper.an.pl.128_130_t.ll025sc.{}_{}.nc', begin_daily, end_daily))
+    int_vars.append(MetVar('UU', 'U', 'e5.oper.an.pl.128_131_u.ll025uv.{}_{}.nc', begin_daily, end_daily))
+    int_vars.append(MetVar('VV', 'V', 'e5.oper.an.pl.128_132_v.ll025uv.{}_{}.nc', begin_daily, end_daily))
+    int_vars.append(MetVar('LANDSEA', 'LSM', 'e5.oper.invariant.128_172_lsm.ll025sc.1979010100_1979010100.nc', begin_monthly, end_monthly, isInvariant=True))
+    int_vars.append(MetVar('SST', 'SSTK', 'e5.oper.an.sfc.128_034_sstk.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SKINTEMP', 'SKT', 'e5.oper.an.sfc.128_235_skt.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SM000007', 'SWVL1', 'e5.oper.an.sfc.128_039_swvl1.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SM007028', 'SWVL2', 'e5.oper.an.sfc.128_040_swvl2.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SM028100', 'SWVL3', 'e5.oper.an.sfc.128_041_swvl3.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SM100289', 'SWVL4', 'e5.oper.an.sfc.128_042_swvl4.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('ST000007', 'STL1', 'e5.oper.an.sfc.128_139_stl1.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('ST007028', 'STL2', 'e5.oper.an.sfc.128_170_stl2.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('ST028100', 'STL3', 'e5.oper.an.sfc.128_183_stl3.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('ST100289', 'STL4', 'e5.oper.an.sfc.128_236_stl4.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SEAICE', 'CI', 'e5.oper.an.sfc.128_031_ci.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('TT', 'VAR_2T', 'e5.oper.an.sfc.128_167_2t.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('DEWPT', 'VAR_2D', 'e5.oper.an.sfc.128_168_2d.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('UU', 'VAR_10U', 'e5.oper.an.sfc.128_165_10u.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('VV', 'VAR_10V', 'e5.oper.an.sfc.128_166_10v.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SNOW_DEN', 'RSN', 'e5.oper.an.sfc.128_033_rsn.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SNOW_EC', 'SD', 'e5.oper.an.sfc.128_141_sd.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('PMSL', 'MSL', 'e5.oper.an.sfc.128_151_msl.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('PSFC', 'SP', 'e5.oper.an.sfc.128_134_sp.ll025sc.{}_{}.nc', begin_monthly, end_monthly))
+    int_vars.append(MetVar('SOILGEO', 'Z', 'e5.oper.invariant.128_129_z.ll025sc.1979010100_1979010100.nc', begin_monthly, end_monthly, isInvariant=True))
 
     # WPS variable names in dont_output cause the corresponding field to not be
     #   written to the output intermediate file. This is useful when fields are
@@ -572,31 +541,24 @@ def main(
     dont_output.append('SNOW_EC')  # Only used in diagnosing SNOW and SNOWH
     dont_output.append('SNOW_DEN') # Only used in diagnosing SNOW and SNOWH
 
-    # if path is not None:
-    #     paths = [ add_trailing_slash(p) for p in args.path.split(',') ]
-    # else:
-    #     paths = None
-
-    root_path = path
-
     # Prepare a list of variables to process. By default, this list contains
     #   all WPS variables from the int_vars list, but the user may have supplied
     #   a subset of these variables.
     var_set = [ int_var.WPSname for int_var in int_vars ]
-    if variables != None:
-        user_var_set = variables.split(',')
+    # if variables != None:
+    #     user_var_set = variables.split(',')
 
-        errcount = 0
-        for v in user_var_set:
-            if v not in var_set:
-                errcount = errcount + 1
-                print('Error: ' + v + ' is not a known WPS variable')
+    #     errcount = 0
+    #     for v in user_var_set:
+    #         if v not in var_set:
+    #             errcount = errcount + 1
+    #             print('Error: ' + v + ' is not a known WPS variable')
 
-        if errcount > 0:
-            print('The following are known WPS variables:', var_set)
-            sys.exit(1)
+    #     if errcount > 0:
+    #         print('The following are known WPS variables:', var_set)
+    #         sys.exit(1)
 
-        var_set = user_var_set
+    #     var_set = user_var_set
 
     currDate = startDate
     while currDate <= endDate:
@@ -611,7 +573,7 @@ def main(
                 continue
 
             try:
-                e5filename = find_era5_file(v, initdate, root_path)
+                e5filename = find_era5_file(v, initdate, path)
             except RuntimeError as e:
                 print(e.args[0])
                 intfile.close()
@@ -620,16 +582,22 @@ def main(
             idx = find_time_index(e5filename, initdate)
             if idx == -1:
                 idx = 0
-            proj = v.mapProj
+            # proj = v.mapProj
 
-            print(e5filename)
+            # print(e5filename)
             with Dataset(e5filename) as f:
                 hdate = intdate_to_string(f.variables['utc_date'][idx])
-                print('Converting ' + v.WPSname + ' at ' + hdate)
+                # print('Converting ' + v.WPSname + ' at ' + hdate)
                 map_source = 'ERA5 reanalysis grid          '
                 units = f.variables[v.ERA5name].units
                 desc = f.variables[v.ERA5name].long_name
                 field_arr = f.variables[v.ERA5name][idx,:]
+
+                lat1 = f['latitude'][0]
+                lon1 = f['longitude'][0]
+
+                proj = MapProjection(WPSUtils.Projections.LATLON,
+                     lat1, lon1, 1.0, 1.0, -0.25, 0.25)
 
                 if field_arr.ndim == 2:
                     slab = field_arr
@@ -643,8 +611,9 @@ def main(
                         xlvl = 201300.0
 
                     if v.WPSname in dont_output:
-                        print(v.WPSname + ' is NOT being written to the ' +
-                            'intermediate file at level', xlvl)
+                        # print(v.WPSname + ' is NOT being written to the ' +
+                        #     'intermediate file at level', xlvl)
+                        pass
                     else:
                         write_slab(intfile, slab, xlvl, proj, v.WPSname, hdate,
                             units, map_source, desc)
@@ -658,14 +627,11 @@ def main(
                         # For isobaric levels, the WPS intermediate file xlvl
                         # value should be in Pa, while the ERA5 netCDF files
                         # provide units of hPa
-                        if isobaric:
-                            xlvl = f.variables['level'][k] * 100.0    # Convert hPa to Pa
-                        else:
-                            xlvl = float(f.variables['level'][k])     # Level index
-
+                        xlvl = f.variables['level'][k] * 100.0    # Convert hPa to Pa
                         if v.WPSname in dont_output:
-                            print(v.WPSname + ' is NOT being written to the ' +
-                                'intermediate file at level', xlvl)
+                            # print(v.WPSname + ' is NOT being written to the ' +
+                            #     'intermediate file at level', xlvl)
+                            pass
                         else:
                             write_slab(intfile, slab, xlvl, proj,
                                 v.WPSname, hdate, units, map_source, desc)
