@@ -96,6 +96,11 @@ convert data at a three-hourly interval for the month of May 2024:
 era5_to_int -h 3 /root/path/to/era5/ 2024-05-01_00 2024-05-02_00
 ```
 
-Usage is provided by running the `era5_to_int` with the `--help`
+Also by default, all variables required to run WRF are processed. If only a selection of variables is required, then use the --variables option:
+```
+era5_to_int --variables LANDSEA,SEAICE,SKINTEMP /root/path/to/era5/ 2024-05-01_00 2024-05-02_00
+```
+
+Usage help is provided by running the `era5_to_int` with the `--help`
 argument.
 

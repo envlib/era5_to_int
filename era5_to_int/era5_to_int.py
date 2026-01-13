@@ -459,7 +459,7 @@ def main(
         start_date: Annotated[datetime, typer.Argument(help='The starting date-time which records are converted', formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H", "%Y-%m-%d_%H"])],
         end_date: Annotated[datetime, typer.Argument(help='The ending date-time which records are converted', formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H", "%Y-%m-%d_%H"])],
         hour_interval: Annotated[int, typer.Option("--hour-interval", "-h", help='The interval in hours between records to be converted')] = 6,
-        # variables: Annotated[str, typer.Option("--variables", "-v", help='A comma-separated list, without spaces, of WPS variable names to process')] = None,
+        variables: Annotated[str, typer.Option("--variables", "-v", help='A comma-separated list, without spaces, of WPS variable names to process')] = None,
         # isobaric: Annotated[bool, typer.Option("--isobaric", "-i", help='Use ERA5 pressure-level data rather than model-level data')] = False,
          ):
 
@@ -545,20 +545,20 @@ def main(
     #   all WPS variables from the int_vars list, but the user may have supplied
     #   a subset of these variables.
     var_set = [ int_var.WPSname for int_var in int_vars ]
-    # if variables != None:
-    #     user_var_set = variables.split(',')
+    if variables != None:
+        user_var_set = variables.split(',')
 
-    #     errcount = 0
-    #     for v in user_var_set:
-    #         if v not in var_set:
-    #             errcount = errcount + 1
-    #             print('Error: ' + v + ' is not a known WPS variable')
+        errcount = 0
+        for v in user_var_set:
+            if v not in var_set:
+                errcount = errcount + 1
+                print('Error: ' + v + ' is not a known WPS variable')
 
-    #     if errcount > 0:
-    #         print('The following are known WPS variables:', var_set)
-    #         sys.exit(1)
+        if errcount > 0:
+            print('The following are known WPS variables:', var_set)
+            sys.exit(1)
 
-    #     var_set = user_var_set
+        var_set = user_var_set
 
     currDate = startDate
     while currDate <= endDate:
