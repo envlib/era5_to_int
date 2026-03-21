@@ -21,10 +21,6 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  'h5netcdf',
-  'h5py',
-  'numpy>=2',
-  'typer==0.19.2',
   'wrf_to_int>=0.1.1',
   ]
 
