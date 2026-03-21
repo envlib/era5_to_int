@@ -7,7 +7,7 @@ name = "era5_to_int"
 dynamic = ["version"]
 description = 'A simple utility for converting ERA5 netCDF files to the WPS intermediate format'
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 keywords = ['WRF', 'WPS', 'ERA5']
 authors = [
@@ -21,9 +21,11 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  'netcdf4', 
+  'h5netcdf',
+  'h5py',
   'numpy>=2',
   'typer==0.19.2',
+  'wrf_to_int>=0.1.1',
   ]
 
 [project.scripts]
@@ -33,6 +35,12 @@ era5_to_int = "era5_to_int.era5_to_int:app"
 Documentation = "https://github.com/envlib/era5_to_int"
 Issues = "https://github.com/envlib/era5_to_int/issues"
 Source = "https://github.com/envlib/era5_to_int"
+
+[tool.pytest.ini_options]
+testpaths = ["era5_to_int/tests"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 include = [

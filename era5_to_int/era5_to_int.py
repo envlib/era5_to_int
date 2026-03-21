@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from netCDF4 import Dataset
+import h5netcdf
 import numpy as np
 # import argparse
 import sys
@@ -10,8 +10,7 @@ from typing_extensions import Annotated
 from typing import Optional
 from datetime import datetime, timedelta
 
-# import WPSUtils
-from . import WPSUtils
+from wrf_to_int import IntermediateFile, Projections, MapProjection, write_slab
 
 ######################################################
 ### Parameters
@@ -298,27 +297,6 @@ def end_monthly(yyyy, mm, dd, hh):
     return f'{yyyy:04d}{mm:02d}{days_in_month(yyyy,mm):02d}{23:02d}'
 
 
-class MapProjection:
-    """ Stores parameters of map projections as used in the WPS intermediate
-    file format.
-    """
-
-    def __init__(self, projType, startLat, startLon, startI, startJ,
-                 deltaLat, deltaLon,
-                 dx=0.0, dy=0.0, truelat1=0.0, truelat2=0.0, xlonc=0.0):
-        self.projType = projType
-        self.startLat = startLat
-        self.startLon = startLon
-        self.startI = startI
-        self.startJ = startJ
-        self.deltaLat = deltaLat
-        self.deltaLon = deltaLon
-        self.dx = dx
-        self.dy = dy
-        self.truelat1 = truelat1
-        self.truelat2 = truelat2
-        self.xlonc = xlonc
-
 
 class MetVar:
     """ Describes a variable to be converted from netCDF to intermediate file
@@ -378,8 +356,8 @@ def find_time_index(ncfilename, validtime):
 
     needed_date = yyyy * 1000000 + mm * 10000 + dd * 100 + hh
 
-    with Dataset(ncfilename) as f:
-        utc_date = f.variables['utc_date'][:]
+    with h5netcdf.File(str(ncfilename), 'r') as f:
+        utc_date = f['utc_date'][:]
 
         idx = np.where(needed_date == utc_date)
         if idx[0].size == 0:
@@ -387,21 +365,6 @@ def find_time_index(ncfilename, validtime):
         else:
             return idx[0][0]
 
-
-def write_slab( intfile, slab, xlvl, proj, WPSname, hdate, units, map_source, desc):
-    """ Writes a 2-d array (a 'slab' of data) to an opened intermediate file
-    using the provided level, projection, and other metadata.
-    This routine assumes that the intermediate file has already been created
-    through a previous call to the WPSUtils.intermediate.write_met_init
-    routine.
-    """
-    missing_value = -1.0e30
-    _ = intfile.write_next_met_field(
-        5, slab.shape[1], slab.shape[0], proj.projType, 0.0, xlvl,
-        proj.startLat, proj.startLon, proj.startI, proj.startJ,
-        proj.deltaLat, proj.deltaLon, proj.dx, proj.dy, proj.xlonc,
-        proj.truelat1, proj.truelat2, 6371229.0, 0, WPSname,
-        hdate, units, map_source, desc, slab.filled(missing_value))
 
 
 def add_trailing_slash(str):
@@ -487,13 +450,13 @@ def main(
     print('interval_hours = ', intvH)
 
     # Set up the two map projections used in the ERA5 fields to be converted
-    # Gaussian = MapProjection(WPSUtils.Projections.GAUSS,
+    # Gaussian = MapProjection(Projections.GAUSS,
     #      89.7848769072, 0.0, 1.0, 1.0, 640.0 / 2.0, 360.0 / 1280.0)
-    # LatLon = MapProjection(WPSUtils.Projections.LATLON,
+    # LatLon = MapProjection(Projections.LATLON,
     #      90.0, 0.0, 1.0, 1.0, -0.25, 0.25)
-    # LatLon = MapProjection(WPSUtils.Projections.LATLON,
+    # LatLon = MapProjection(Projections.LATLON,
     #      -20.0, 144.0, 1.0, 1.0, -0.25, 0.25)
-    # LatLon = MapProjection(WPSUtils.Projections.LATLON,
+    # LatLon = MapProjection(Projections.LATLON,
     #      -15.0, 120.0, 1.0, 1.0, -0.25, 0.25)
 
     diagnostics = []
@@ -565,7 +528,7 @@ def main(
         initdate = datetime_to_string(currDate)
         print('Processing time record ' + initdate)
 
-        intfile = WPSUtils.IntermediateFile('ERA5', initdate)
+        intfile = IntermediateFile('ERA5', initdate)
 
         for v in int_vars:
 
@@ -585,18 +548,18 @@ def main(
             # proj = v.mapProj
 
             # print(e5filename)
-            with Dataset(e5filename) as f:
-                hdate = intdate_to_string(f.variables['utc_date'][idx])
+            with h5netcdf.File(str(e5filename), 'r') as f:
+                hdate = intdate_to_string(f['utc_date'][idx])
                 # print('Converting ' + v.WPSname + ' at ' + hdate)
                 map_source = 'ERA5 reanalysis grid          '
-                units = f.variables[v.ERA5name].units
-                desc = f.variables[v.ERA5name].long_name
-                field_arr = f.variables[v.ERA5name][idx,:]
+                units = f[v.ERA5name].attrs['units']
+                desc = f[v.ERA5name].attrs['long_name']
+                field_arr = f[v.ERA5name][idx,:]
 
                 lat1 = f['latitude'][0]
                 lon1 = f['longitude'][0]
 
-                proj = MapProjection(WPSUtils.Projections.LATLON,
+                proj = MapProjection(Projections.LATLON,
                      lat1, lon1, 1.0, 1.0, -0.25, 0.25)
 
                 if field_arr.ndim == 2:
@@ -621,13 +584,13 @@ def main(
                     for diag in diagnostics:
                         diag.consider(v.WPSname, xlvl, proj, hdate, slab, intfile)
                 else:
-                    for k in range(f.dimensions['level'].size):
+                    for k in range(f['level'].shape[0]):
                         slab = field_arr[k,:,:]
 
                         # For isobaric levels, the WPS intermediate file xlvl
                         # value should be in Pa, while the ERA5 netCDF files
                         # provide units of hPa
-                        xlvl = f.variables['level'][k] * 100.0    # Convert hPa to Pa
+                        xlvl = f['level'][k] * 100.0    # Convert hPa to Pa
                         if v.WPSname in dont_output:
                             # print(v.WPSname + ' is NOT being written to the ' +
                             #     'intermediate file at level', xlvl)
