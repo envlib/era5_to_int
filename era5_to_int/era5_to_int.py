@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 import h5netcdf
 import numpy as np
-# import argparse
 import sys
-# import os.path
 from pathlib import Path
 import typer
-from typing_extensions import Annotated
-from typing import Optional
+from typing import Annotated, Optional
 from datetime import datetime, timedelta
 
 from wrf_to_int import IntermediateFile, Projections, MapProjection, write_slab
@@ -363,7 +360,7 @@ def find_time_index(ncfilename, validtime):
         if idx[0].size == 0:
             return -1
         else:
-            return idx[0][0]
+            return int(idx[0][0])
 
 
 
@@ -549,15 +546,21 @@ def main(
 
             # print(e5filename)
             with h5netcdf.File(str(e5filename), 'r') as f:
-                hdate = intdate_to_string(f['utc_date'][idx])
-                # print('Converting ' + v.WPSname + ' at ' + hdate)
+                hdate = intdate_to_string(int(f['utc_date'][idx]))
                 map_source = 'ERA5 reanalysis grid          '
                 units = f[v.ERA5name].attrs['units']
+                if isinstance(units, bytes):
+                    units = units.decode()
                 desc = f[v.ERA5name].attrs['long_name']
-                field_arr = f[v.ERA5name][idx,:]
+                if isinstance(desc, bytes):
+                    desc = desc.decode()
+                field_arr = np.asarray(f[v.ERA5name][idx,:], dtype=np.float64)
+                fill_val = f[v.ERA5name].attrs.get('_FillValue')
+                if fill_val is not None:
+                    field_arr[field_arr == fill_val] = np.nan
 
-                lat1 = f['latitude'][0]
-                lon1 = f['longitude'][0]
+                lat1 = float(f['latitude'][0])
+                lon1 = float(f['longitude'][0])
 
                 proj = MapProjection(Projections.LATLON,
                      lat1, lon1, 1.0, 1.0, -0.25, 0.25)
@@ -574,8 +577,6 @@ def main(
                         xlvl = 201300.0
 
                     if v.WPSname in dont_output:
-                        # print(v.WPSname + ' is NOT being written to the ' +
-                        #     'intermediate file at level', xlvl)
                         pass
                     else:
                         write_slab(intfile, slab, xlvl, proj, v.WPSname, hdate,
@@ -590,10 +591,8 @@ def main(
                         # For isobaric levels, the WPS intermediate file xlvl
                         # value should be in Pa, while the ERA5 netCDF files
                         # provide units of hPa
-                        xlvl = f['level'][k] * 100.0    # Convert hPa to Pa
+                        xlvl = float(f['level'][k]) * 100.0    # Convert hPa to Pa
                         if v.WPSname in dont_output:
-                            # print(v.WPSname + ' is NOT being written to the ' +
-                            #     'intermediate file at level', xlvl)
                             pass
                         else:
                             write_slab(intfile, slab, xlvl, proj,
