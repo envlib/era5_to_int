@@ -101,6 +101,11 @@ Also by default, all variables required to run WRF are processed. If only a sele
 era5_to_int --variables LANDSEA,SEAICE,SKINTEMP /root/path/to/era5/ 2024-05-01_00 2024-05-02_00
 ```
 
+If you want all variables *except* a few, use `--skip-vars` (composes with `--variables` if both are given). Skipped variables do not need their ERA5 NetCDF files on disk, so this is useful when sourcing a field from elsewhere — for example, providing SST and sea ice from a higher-resolution product:
+```
+era5_to_int --skip-vars SST,SEAICE /root/path/to/era5/ 2024-05-01_00 2024-05-02_00
+```
+
 Usage help is provided by running the `era5_to_int` with the `--help`
 argument.
 

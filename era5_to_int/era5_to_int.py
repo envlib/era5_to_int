@@ -420,6 +420,7 @@ def main(
         end_date: Annotated[datetime, typer.Argument(help='The ending date-time which records are converted', formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H", "%Y-%m-%d_%H"])],
         hour_interval: Annotated[int, typer.Option("--hour-interval", "-h", help='The interval in hours between records to be converted')] = 6,
         variables: Annotated[str, typer.Option("--variables", "-v", help='A comma-separated list, without spaces, of WPS variable names to process')] = None,
+        skip_vars: Annotated[str, typer.Option("--skip-vars", "-s", help='A comma-separated list, without spaces, of WPS variable names to exclude from output. Skipped variables do not need their ERA5 NetCDF files on disk. Composes with --variables.')] = None,
         # isobaric: Annotated[bool, typer.Option("--isobaric", "-i", help='Use ERA5 pressure-level data rather than model-level data')] = False,
          ):
 
@@ -519,6 +520,22 @@ def main(
             sys.exit(1)
 
         var_set = user_var_set
+
+    if skip_vars != None:
+        skip_var_set = skip_vars.split(',')
+        known = [int_var.WPSname for int_var in int_vars]
+
+        errcount = 0
+        for v in skip_var_set:
+            if v not in known:
+                errcount = errcount + 1
+                print('Error: ' + v + ' is not a known WPS variable')
+
+        if errcount > 0:
+            print('The following are known WPS variables:', known)
+            sys.exit(1)
+
+        var_set = [v for v in var_set if v not in skip_var_set]
 
     currDate = startDate
     while currDate <= endDate:

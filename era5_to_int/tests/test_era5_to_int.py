@@ -264,6 +264,68 @@ class TestCliConvert:
         assert (tmp_path / 'ERA5:2023-02-12_12').exists()
         assert (tmp_path / 'ERA5:2023-02-12_18').exists()
 
+    def test_skip_vars_excludes_field(self, tmp_path):
+        """--skip-vars removes the named field from the output."""
+        import os
+        os.chdir(tmp_path)
+
+        result = runner.invoke(app, [
+            str(ERA5_ROOT),
+            '2023-02-12_12',
+            '2023-02-12_12',
+            '-h', '6',
+            '-s', 'SST,SEAICE',
+        ])
+        assert result.exit_code == 0, result.output
+
+        out_file = tmp_path / 'ERA5:2023-02-12_12'
+        fields = _read_int_fields(out_file)
+        field_names = {f[0] for f in fields}
+
+        assert 'SST' not in field_names
+        assert 'SEAICE' not in field_names
+        # Other fields still written
+        assert 'PSFC' in field_names
+        assert 'SKINTEMP' in field_names
+
+    def test_skip_vars_unknown_errors(self, tmp_path):
+        """--skip-vars with an unknown WPS variable exits 1."""
+        import os
+        os.chdir(tmp_path)
+
+        result = runner.invoke(app, [
+            str(ERA5_ROOT),
+            '2023-02-12_12',
+            '2023-02-12_12',
+            '-h', '6',
+            '-s', 'NOTAREALVAR',
+        ])
+        assert result.exit_code == 1
+        assert 'NOTAREALVAR' in result.output
+
+    def test_skip_vars_composes_with_variables(self, tmp_path):
+        """--variables and --skip-vars compose: include list minus skip list."""
+        import os
+        os.chdir(tmp_path)
+
+        result = runner.invoke(app, [
+            str(ERA5_ROOT),
+            '2023-02-12_12',
+            '2023-02-12_12',
+            '-h', '6',
+            '-v', 'PSFC,PMSL,SST',
+            '-s', 'SST',
+        ])
+        assert result.exit_code == 0, result.output
+
+        out_file = tmp_path / 'ERA5:2023-02-12_12'
+        fields = _read_int_fields(out_file)
+        field_names = {f[0] for f in fields}
+
+        assert 'PSFC' in field_names
+        assert 'PMSL' in field_names
+        assert 'SST' not in field_names
+
 
 # ======================================================================
 # Helpers
